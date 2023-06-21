@@ -62,7 +62,7 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 
 		if pgError, ok := err.(*pgconn.PgError); ok {
 			if pgError.Code == "23514" {
-				return fmt.Errorf("out of stock for product %d", productCode)
+				return models.ErrNoProducts
 			}
 		} else {
 			fmt.Println("Data base error:", err)
@@ -92,7 +92,7 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) er
 		// Проверка ошибки на наличие резерва товара
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23514" {
 			tx.Rollback()
-			return fmt.Errorf("No products %d in reserve in warehouse %d! ", productCode, warehouseID)
+			return models.ErrNoProductsInReserve
 		}
 
 		// Ошибка базы данных

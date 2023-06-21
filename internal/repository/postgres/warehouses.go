@@ -2,12 +2,14 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/lib/pq"
 	"log"
 )
 
 type Warehouse interface {
-	ReserveProducts(wareHouseID int, productCodes []int) ([]int, error)
-	ReleaseReservedProducts(productCodes []int) error
+	ReserveProducts(wareHouseID int, productCodes int) error
+	ReleaseReservedProducts(productCodes int) error
 	GetRemainingProductCount(warehouseID int) (int, error)
 }
 
@@ -21,42 +23,62 @@ func NewWareHouseRepo(db *sql.DB) *WarehouseRepo {
 	}
 }
 
-func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCodes []int) error {
-	log.Println("Reserving products:", productCodes)
+func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error {
+	log.Println("Reserving products:", productCode)
 
-	// Формируем SQL-запрос для получения и резервирования товаров
-	query := `
-		UPDATE product
-		SET quantity = quantity - 1
-		WHERE warehouse_id = ? AND code = ? AND quantity > 0
-	`
-
-	// Итерируемся по переданным кодам товаров и резервируем их
-	for _, code := range productCodes {
-		// Выполняем запрос к базе данных для резервирования товара
-		row := w.db.QueryRow(query, wareHouseID, code)
-
-		// Считываем код товара из результата запроса
-		var reservedCode int
-		err := row.Scan(&reservedCode)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				// Если товар не найден или количество товара равно 0, пропускаем его
-				continue
-			}
-			return err
-		}
-
+	_, err := w.db.Exec("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
+	if err != nil {
+		return err
 	}
 
-	// должны добавить в таблицу reservations все резервации
+	tx, err := w.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmtSelect, err := tx.Prepare("SELECT * FROM product_warehouse WHERE warehouse_id = $1 FOR UPDATE;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmtSelect.Close()
+
+	stmtUpdate, err := tx.Prepare("UPDATE product_warehouse SET reserved = reserved + 1 WHERE warehouse_id = $1 AND product_code = $2;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmtUpdate.Close()
+
+	rows, err := stmtSelect.Query(wareHouseID)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+
+	_, err = stmtUpdate.Exec(wareHouseID, productCode)
+	if err != nil {
+
+		if pqErr, ok := err.(*pq.Error); ok {
+			errorCode := pqErr.Code
+			fmt.Println("Код ошибки:", errorCode)
+		} else {
+			// Обработка других типов ошибок базы данных
+			fmt.Println("Ошибка базы данных:", err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (w *WarehouseRepo) ReleaseReservedProducts(productCodes []int) error {
+func (w *WarehouseRepo) ReleaseReservedProducts(productCodes int) error {
 	// Реализация освобождения резерва товаров
-	// Используйте w.DB для выполнения соответствующих операций с базой данных
 	log.Println("Releasing reserved products:", productCodes)
 	return nil
 }

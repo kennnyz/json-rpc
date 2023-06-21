@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	// pgx import
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func NewClient(dsn string) (*sql.DB, error) {

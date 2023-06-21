@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/kennnyz/lamoda/lamodaTestTask/internal/models"
-	"github.com/kennnyz/lamoda/lamodaTestTask/internal/repository/postgres_repository"
+	"github.com/kennnyz/lamoda/internal/models"
+	"github.com/kennnyz/lamoda/internal/repository/postgres_repository"
 )
 
 type WarehouseService struct {

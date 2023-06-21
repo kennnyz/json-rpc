@@ -1,6 +1,6 @@
 package service
 
-import "github.com/kennnyz/lamoda/lamodaTestTask/internal/models"
+import "github.com/kennnyz/lamoda/internal/models"
 
 type WareHouse interface {
 	ReserveProducts(wareHouseID int, productCodes int) error

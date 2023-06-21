@@ -1,7 +1,7 @@
 package postgres_repository
 
 import (
-	"github.com/kennnyz/lamoda/lamodaTestTask/pkg/database/postgres"
+	"github.com/kennnyz/lamoda/pkg/database/postgres"
 	"log"
 	"testing"
 )

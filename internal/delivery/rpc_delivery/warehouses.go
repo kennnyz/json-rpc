@@ -2,18 +2,10 @@ package rpc_delivery
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 )
 
-func (h *Handler) initWarehousesRoutes(api *gin.RouterGroup) {
-	warehouses := api.Group("/warehouses")
-	{
-		warehouses.POST("/reserve", h.reserveProducts)
-		warehouses.POST("/release", h.releaseProducts)
-		warehouses.GET("/remaining", h.getRemainingProductCount)
-	}
-}
-
-type warehouseProductsReq struct {
+type WarehouseProductsReq struct {
 	WarehouseID  int   `json:"warehouse_id"`
 	ProductCodes []int `json:"product_codes"`
 }
@@ -22,33 +14,47 @@ type warehouseRemainingReq struct {
 	WarehouseID int `json:"warehouse_id"`
 }
 
+type Reply struct {
+	Data string
+}
+
 func (h *Handler) reserveProducts(c *gin.Context) {
-	var warehouseProducts warehouseProductsReq
+	var warehouseProducts WarehouseProductsReq
 	if err := c.ShouldBindJSON(&warehouseProducts); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	call, err := h.jsonRPC.Call(c, "ReserveProducts", warehouseProducts)
+	log.Println(warehouseProducts)
+	var reply Reply
+
+	err := h.jsonRPC.Call("API.ReserveProducts", warehouseProducts, &reply)
 	if err != nil {
+		log.Println(err)
 		return
 	}
+	log.Println(warehouseProducts)
 
-	c.JSON(200, call)
+	log.Println(reply)
+
+	c.JSON(200, gin.H{"data": "ok"})
 }
 
 func (h *Handler) releaseProducts(c *gin.Context) {
-	var warehouseProducts warehouseProductsReq
+	var warehouseProducts WarehouseProductsReq
 	if err := c.ShouldBindJSON(&warehouseProducts); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	call, err := h.jsonRPC.Call(c, "ReleaseProducts", warehouseProducts)
+
+	log.Println(warehouseProducts)
+	var reply Reply
+	err := h.jsonRPC.Call("ReleaseProducts", warehouseProducts, reply)
 	if err != nil {
 		return
 	}
 
-	c.JSON(200, call)
+	c.JSON(200, gin.H{"data": "ok"})
 }
 
 func (h *Handler) getRemainingProductCount(c *gin.Context) {
@@ -57,11 +63,13 @@ func (h *Handler) getRemainingProductCount(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	call, err := h.jsonRPC.Call(c, "GetRemainingProductCount", warehouseRemaining)
+
+	reply := Reply{}
+	err := h.jsonRPC.Call("GetRemainingProductCount", warehouseRemaining, reply)
 	if err != nil {
 		return
 	}
 
-	c.JSON(200, call)
+	c.JSON(200, gin.H{"data": "ok"})
 
 }

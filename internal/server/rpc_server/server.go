@@ -1,8 +1,8 @@
 package grpc_server
 
 import (
-	"github.com/kennnyz/lamoda/lamodaTestTask/internal/models"
-	"github.com/kennnyz/lamoda/lamodaTestTask/internal/service"
+	"github.com/kennnyz/lamoda/internal/models"
+	"github.com/kennnyz/lamoda/internal/service"
 	"log"
 	"net"
 	"net/rpc"
@@ -14,11 +14,13 @@ type Config struct {
 }
 
 type Server struct {
+	services *service.Services
 	Config
 }
 
-func NewRPCServer(addr string) *Server {
+func NewRPCServer(services *service.Services, addr string) *Server {
 	return &Server{
+		services: services,
 		Config: Config{
 			ListenAddr: addr,
 		},
@@ -29,9 +31,9 @@ type API struct {
 	services *service.Services
 }
 
-type ReserveProductRequest struct {
-	WarehouseID  int
-	ProductCodes []int
+type WarehouseProductsReq struct {
+	WarehouseID  int   `json:"warehouse_id"`
+	ProductCodes []int `json:"product_codes"`
 }
 
 type ReserveProductResponse struct {
@@ -55,8 +57,9 @@ type GetRemainingProductCountResponse struct {
 	Products []models.Product
 }
 
-func (a *API) ReserveProducts(req *ReserveProductRequest, res *ReserveProductResponse) error {
+func (a *API) ReserveProducts(req *WarehouseProductsReq, res *ReserveProductResponse) error {
 	var reserved []int
+	log.Println(req.ProductCodes)
 	for _, productCode := range req.ProductCodes {
 		err := a.services.WareHouse.ReserveProducts(req.WarehouseID, productCode)
 		if err != nil && err != models.ErrNoProducts {
@@ -67,6 +70,7 @@ func (a *API) ReserveProducts(req *ReserveProductRequest, res *ReserveProductRes
 	*res = ReserveProductResponse{
 		ReservedProductCodes: reserved,
 	}
+	log.Println("hello")
 	return nil
 }
 
@@ -107,12 +111,15 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
+
 	listener := new(API)
+	listener.services = s.services
 	rpc.Register(listener)
 	log.Println("RPC server started")
 	for {
 		conn, err := inbound.Accept()
 		if err != nil {
+			log.Println(err)
 			continue
 		}
 		jsonrpc.ServeConn(conn)

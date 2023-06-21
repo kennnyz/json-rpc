@@ -2,23 +2,18 @@ package rpc_delivery
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/kennnyz/lamoda/lamodaTestTask/internal/service"
-	"github.com/ybbus/jsonrpc/v3"
+	"net/rpc"
 )
 
-// RPC server
-
 type Handler struct {
-	services *service.Services
-	jsonRPC  jsonrpc.RPCClient
+	jsonRPC *rpc.Client
 
 	// клиент json-rpc
 }
 
-func NewHandler(services *service.Services, rpcClient jsonrpc.RPCClient) *Handler {
+func NewHandler(rpcClient *rpc.Client) *Handler {
 	return &Handler{
-		services: services,
-		jsonRPC:  rpcClient,
+		jsonRPC: rpcClient,
 	}
 }
 

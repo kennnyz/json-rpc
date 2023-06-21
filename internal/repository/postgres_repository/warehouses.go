@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/kennnyz/lamoda/lamodaTestTask/internal/models"
+	"github.com/kennnyz/lamoda/internal/models"
 	"log"
 )
 

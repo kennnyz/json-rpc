@@ -2,7 +2,7 @@ package postgres_repository
 
 import (
 	"fmt"
-	"github.com/kennnyz/lamoda/lamodaTestTask/pkg/database/postgres"
+	"github.com/kennnyz/lamoda/pkg/database/postgres"
 	"log"
 	"testing"
 )
@@ -24,6 +24,6 @@ func TestWarehouseRepo_GetRemainingProductCount(t *testing.T) {
 	}
 
 	for _, product := range count {
-		fmt.Println(product.Name, product.Code, product.Quantity)
+		fmt.Println(product)
 	}
 }

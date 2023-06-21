@@ -3,14 +3,15 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/kennnyz/lamoda/lamodaTestTask/internal/models"
 	"log"
 )
 
 type Warehouse interface {
 	ReserveProducts(wareHouseID int, productCodes int) error
-	ReleaseReservedProducts(productCodes int) error
-	GetRemainingProductCount(warehouseID int) (int, error)
+	ReleaseReservedProducts(warehouseId, productCodes int) error
+	GetRemainingProductCount(warehouseID int) ([]models.Product, error)
 }
 
 type WarehouseRepo struct {
@@ -59,12 +60,12 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 	_, err = stmtUpdate.Exec(wareHouseID, productCode)
 	if err != nil {
 
-		if pqErr, ok := err.(*pq.Error); ok {
-			errorCode := pqErr.Code
-			fmt.Println("Код ошибки:", errorCode)
+		if pgError, ok := err.(*pgconn.PgError); ok {
+			if pgError.Code == "23514" {
+				return fmt.Errorf("out of stock for product %d", productCode)
+			}
 		} else {
-			// Обработка других типов ошибок базы данных
-			fmt.Println("Ошибка базы данных:", err)
+			fmt.Println("Data base error:", err)
 		}
 		return err
 	}
@@ -77,15 +78,59 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 	return nil
 }
 
-func (w *WarehouseRepo) ReleaseReservedProducts(productCodes int) error {
-	// Реализация освобождения резерва товаров
-	log.Println("Releasing reserved products:", productCodes)
+func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) error {
+	// Начало транзакции
+	tx, err := w.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Обновление состояния таблицы product_warehouse
+	query := `UPDATE product_warehouse SET reserved = reserved - 1, count = count - 1 WHERE product_code = $1 AND warehouse_id = $2;`
+	_, err = tx.Exec(query, productCode, warehouseID)
+	if err != nil {
+		// Проверка ошибки на наличие резерва товара
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23514" {
+			tx.Rollback()
+			return fmt.Errorf("out of stock for product %d in warehouse %d", productCode, warehouseID)
+		}
+
+		// Ошибка базы данных
+		tx.Rollback()
+		return err
+	}
+
+	// Завершение транзакции
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (w *WarehouseRepo) GetRemainingProductCount(warehouseID int) (int, error) {
-	// Реализация получения количества оставшихся товаров на складе
-	// Используйте w.DB для выполнения соответствующих операций с базой данных
+func (w *WarehouseRepo) GetRemainingProductCount(warehouseID int) ([]models.Product, error) {
+	//получения количества оставшихся товаров на складе
 	log.Println("Getting remaining product count for warehouse:", warehouseID)
-	return 0, nil
+
+	var products []models.Product
+
+	query := `SELECT product_name, product_code, count FROM product_warehouse WHERE warehouse_id = $1;`
+
+	rows, err := w.db.Query(query, warehouseID)
+	if err != nil {
+		return products, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p models.Product
+		err := rows.Scan(&p.Name, &p.Code, &p.Quantity)
+		if err != nil {
+			return products, err
+		}
+		products = append(products, p)
+	}
+
+	return products, nil
 }

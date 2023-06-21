@@ -1,4 +1,4 @@
-package postgres
+package postgres_repository
 
 import (
 	"database/sql"
@@ -92,7 +92,7 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) er
 		// Проверка ошибки на наличие резерва товара
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23514" {
 			tx.Rollback()
-			return fmt.Errorf("out of stock for product %d in warehouse %d", productCode, warehouseID)
+			return fmt.Errorf("No products %d in reserve in warehouse %d! ", productCode, warehouseID)
 		}
 
 		// Ошибка базы данных

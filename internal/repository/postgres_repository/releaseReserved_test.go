@@ -1,4 +1,4 @@
-package postgres
+package postgres_repository
 
 import (
 	"github.com/kennnyz/lamoda/lamodaTestTask/pkg/database/postgres"
@@ -17,5 +17,9 @@ func TestWarehouseRepo_ReleaseReservedProducts(t *testing.T) {
 	// создаем репозиторий
 	wareHouse := NewWareHouseRepo(db)
 
-	err = wareHouse.ReleaseReservedProducts(2, 22)
+	err = wareHouse.ReleaseReservedProducts(2, 23)
+	if err != nil {
+		log.Println(err)
+		t.Error(err)
+	}
 }

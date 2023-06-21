@@ -1,4 +1,4 @@
-package postgres
+package postgres_repository
 
 import (
 	"github.com/kennnyz/lamoda/lamodaTestTask/pkg/database/postgres"

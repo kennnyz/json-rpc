@@ -1,4 +1,4 @@
-package json_rpc_server
+package main
 
 import (
 	"github.com/kennnyz/lamoda/internal/repository/postgres_repository"

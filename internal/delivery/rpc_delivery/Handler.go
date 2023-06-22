@@ -6,9 +6,7 @@ import (
 )
 
 type Handler struct {
-	jsonRPC *rpc.Client
-
-	// клиент json-rpc
+	jsonRPC *rpc.Client // клиент для обращения к jsonRPC серверу
 }
 
 func NewHandler(rpcClient *rpc.Client) *Handler {

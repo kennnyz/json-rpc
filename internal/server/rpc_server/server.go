@@ -38,11 +38,12 @@ type WarehouseProductsReq struct {
 
 type ReserveProductResponse struct {
 	ReservedProductCodes []int
+	err                  error
 }
 
 type ReleaseProductRequest struct {
-	WarehouseID  int
-	ProductCodes []int
+	WarehouseID  int   `json:"warehouse_id"`
+	ProductCodes []int `json:"product_codes"`
 }
 
 type ReleaseProductResponse struct {
@@ -50,7 +51,7 @@ type ReleaseProductResponse struct {
 }
 
 type GetRemainingProductCountRequest struct {
-	WarehouseID int
+	WarehouseID int `json:"warehouse_id"`
 }
 
 type GetRemainingProductCountResponse struct {
@@ -62,13 +63,21 @@ func (a *API) ReserveProducts(req *WarehouseProductsReq, res *ReserveProductResp
 	log.Println(req.ProductCodes)
 	for _, productCode := range req.ProductCodes {
 		err := a.services.WareHouse.ReserveProducts(req.WarehouseID, productCode)
-		if err != nil && err != models.ErrNoProducts {
+		if err != nil {
+			if err == models.ErrNoProducts {
+				continue
+			}
+			*res = ReserveProductResponse{
+				err:                  err,
+				ReservedProductCodes: reserved,
+			}
 			return err
 		}
 		reserved = append(reserved, productCode)
 	}
 	*res = ReserveProductResponse{
 		ReservedProductCodes: reserved,
+		err:                  nil,
 	}
 	log.Println("hello")
 	return nil
@@ -79,7 +88,11 @@ func (a *API) ReleaseProducts(req *ReleaseProductRequest, res *ReleaseProductRes
 	for _, productCode := range req.ProductCodes {
 		err := a.services.WareHouse.ReleaseReservedProducts(req.WarehouseID, productCode)
 		if err != nil {
-			continue
+			log.Println(err)
+			if err == models.ErrNoProductsInReserve {
+				continue
+			}
+			return err
 		}
 		reserved = append(reserved, productCode)
 	}

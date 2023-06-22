@@ -10,26 +10,11 @@ import (
 )
 
 func Run(configPath string) {
-	// Запустить сервер
-
-	//rpcServer := grpc_server.NewRPCServer("0.0.0.0:12345") // todo config
-	//
-	//go func() {
-	//	err := rpcServer.Run()
-	//	if err != nil {
-	//		log.Println(err)
-	//		return
-	//	}
-	//}()
-
-	// Слушаем по апи => rpc
-	//rpcClient := jsonrpc.NewClient("localhost:12345")
-
-	client, err := jsonrpc.Dial("tcp", "localhost:12345") //Меняется только эта строчка
+	RpcClient, err := jsonrpc.Dial("tcp", "localhost:12345") //Меняется только эта строчка
 	if err != nil {
 		log.Fatal(err)
 	}
-	handler := rpc_delivery.NewHandler(client)
+	handler := rpc_delivery.NewHandler(RpcClient)
 
 	httpServer := http_server.NewHTTPServer(":8080", handler.Init())
 

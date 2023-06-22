@@ -37,7 +37,7 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 		return err
 	}
 
-	stmtSelect, err := tx.Prepare("SELECT * FROM product_warehouse WHERE warehouse_id = $1 FOR UPDATE;")
+	stmtSelect, err := tx.Prepare("SELECT * FROM product_warehouse WHERE warehouse_id = $1 AND product_code = $2 FOR UPDATE;")
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -51,10 +51,16 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 	}
 	defer stmtUpdate.Close()
 
-	rows, err := stmtSelect.Query(wareHouseID)
+	rows, err := stmtSelect.Query(wareHouseID, productCode)
 	if err != nil {
 		return err
 	}
+
+	if !rows.Next() {
+		fmt.Println("No products")
+		return models.ErrNoProducts
+	}
+
 	rows.Close()
 
 	_, err = stmtUpdate.Exec(wareHouseID, productCode)
@@ -62,10 +68,9 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 
 		if pgError, ok := err.(*pgconn.PgError); ok {
 			if pgError.Code == "23514" {
+				fmt.Println(err)
 				return models.ErrNoProducts
 			}
-		} else {
-			fmt.Println("Data base error:", err)
 		}
 		return err
 	}
@@ -74,6 +79,8 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("success")
 
 	return nil
 }
@@ -85,26 +92,50 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) er
 		return err
 	}
 
-	// Обновление состояния таблицы product_warehouse
-	query := `UPDATE product_warehouse SET reserved = reserved - 1, count = count - 1 WHERE product_code = $1 AND warehouse_id = $2;`
-	_, err = tx.Exec(query, productCode, warehouseID)
+	stmtSelect, err := tx.Prepare("SELECT * FROM product_warehouse WHERE warehouse_id = $1 AND product_code = $2 FOR UPDATE;")
 	if err != nil {
-		// Проверка ошибки на наличие резерва товара
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23514" {
-			tx.Rollback()
-			return models.ErrNoProductsInReserve
-		}
-
-		// Ошибка базы данных
 		tx.Rollback()
 		return err
 	}
+	defer stmtSelect.Close()
 
-	// Завершение транзакции
+	stmtUpdate, err := tx.Prepare("UPDATE product_warehouse SET reserved = reserved - 1, count = count -1 WHERE warehouse_id = $1 AND product_code = $2;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmtUpdate.Close()
+
+	rows, err := stmtSelect.Query(warehouseID, productCode)
+	if err != nil {
+		return err
+	}
+
+	if !rows.Next() {
+		fmt.Println("No products")
+		return models.ErrNoProductsInReserve
+	}
+
+	rows.Close()
+
+	_, err = stmtUpdate.Exec(warehouseID, productCode)
+	if err != nil {
+		if pgError, ok := err.(*pgconn.PgError); ok {
+			if pgError.Code == "23514" {
+				fmt.Println(err)
+				return models.ErrNoProducts
+			}
+		}
+		fmt.Println(err)
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("success")
 
 	return nil
 }

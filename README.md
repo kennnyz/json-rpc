@@ -75,21 +75,21 @@
     {
         "ID": 0,
         "Name": "product2",
-        "Size": "",
+        "Size": "10",
         "Code": "24",
         "Quantity": 10
     },
     {
         "ID": 0,
         "Name": "Шорты",
-        "Size": "",
+        "Size": "15",
         "Code": "26",
         "Quantity": 10
     },
     {
         "ID": 0,
         "Name": "product1",
-        "Size": "",
+        "Size": "13",
         "Code": "23",
         "Quantity": 9
     }
@@ -101,7 +101,10 @@
 ```
  git clone https://github.com/kennnyz/lamodaTestTask
 ```
-Далее можно 
+Далее можно через Make run-app
+
+
+
 
 
 

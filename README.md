@@ -101,7 +101,11 @@
 ```
  git clone https://github.com/kennnyz/lamodaTestTask
 ```
-Далее можно через Make run-app
+
+```
+    docker compose up
+```
+
 
 
 

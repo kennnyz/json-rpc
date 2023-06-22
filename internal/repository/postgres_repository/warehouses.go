@@ -26,8 +26,12 @@ func NewWareHouseRepo(db *sql.DB) *WarehouseRepo {
 
 func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error {
 	log.Println("Reserving products:", productCode)
+	err := w.checkWarehouse(wareHouseID)
+	if err != nil {
+		return err
+	}
 
-	_, err := w.db.Exec("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
+	_, err = w.db.Exec("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
 	if err != nil {
 		return err
 	}
@@ -87,6 +91,10 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error 
 
 func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) error {
 	// Начало транзакции
+	err := w.checkWarehouse(warehouseID)
+	if err != nil {
+		return err
+	}
 	tx, err := w.db.Begin()
 	if err != nil {
 		return err
@@ -142,6 +150,10 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) er
 
 func (w *WarehouseRepo) GetRemainingProductCount(warehouseID int) ([]models.Product, error) {
 	//получения количества оставшихся товаров на складе
+	err := w.checkWarehouse(warehouseID)
+	if err != nil {
+		return nil, err
+	}
 	log.Println("Getting remaining product count for warehouse:", warehouseID)
 
 	var products []models.Product
@@ -164,4 +176,17 @@ func (w *WarehouseRepo) GetRemainingProductCount(warehouseID int) ([]models.Prod
 	}
 
 	return products, nil
+}
+
+func (w *WarehouseRepo) checkWarehouse(warehouseID int) error {
+	q := `SELECT * FROM warehouse WHERE id = $1;`
+	rows, err := w.db.Query(q, warehouseID)
+	if err != nil {
+		return models.ErrWarehouseNotAvaileble
+	}
+	if !rows.Next() {
+		return models.ErrNoProductsInReserve
+	}
+	defer rows.Close()
+	return nil
 }

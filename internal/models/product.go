@@ -1,7 +1,6 @@
 package models
 
 type Product struct {
-	ID       int    // идентификатор товара
 	Name     string // название товара
 	Size     string // размер товара
 	Code     string // уникальный код товара

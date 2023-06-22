@@ -1,4 +1,4 @@
-package rpc_delivery
+package rpc
 
 import (
 	"github.com/gin-gonic/gin"

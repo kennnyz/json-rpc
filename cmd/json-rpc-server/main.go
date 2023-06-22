@@ -10,7 +10,7 @@ import (
 
 func main() {
 
-	db, err := postgres.NewClient("host=localhost port=5432 user=postgres password=password dbname=lamoda sslmode=disable timezone=UTC connect_timeout=5") // todo config
+	db, err := postgres.NewClient("host=host.docker.internal port=5432 user=postgres password=password dbname=lamoda sslmode=disable timezone=UTC connect_timeout=5") // todo config
 	if err != nil {
 		log.Println(err)
 		return
@@ -23,5 +23,8 @@ func main() {
 
 	server := grpc_server.NewRPCServer(services, "0.0.0.0:12345")
 
-	server.Run()
+	err = server.Run()
+	if err != nil {
+		log.Println(err)
+	}
 }

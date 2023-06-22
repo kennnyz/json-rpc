@@ -6,11 +6,13 @@ import (
 	"github.com/kennnyz/lamoda/internal/service"
 	"github.com/kennnyz/lamoda/pkg/database/postgres"
 	"log"
+	"os"
 )
 
 func main() {
 
-	db, err := postgres.NewClient("host=host.docker.internal port=5432 user=postgres password=password dbname=lamoda sslmode=disable timezone=UTC connect_timeout=5") // todo config
+	dsn := os.Getenv("DSN")
+	db, err := postgres.NewClient(dsn)
 	if err != nil {
 		log.Println(err)
 		return
@@ -21,7 +23,8 @@ func main() {
 	services := service.NewServices(repo.Warehouse)
 	log.Println(services.WareHouse)
 
-	server := grpc_server.NewRPCServer(services, "0.0.0.0:12345")
+	rcpAddr := os.Getenv("RCP_ADDRESS")
+	server := grpc_server.NewRPCServer(services, rcpAddr)
 
 	err = server.Run()
 	if err != nil {

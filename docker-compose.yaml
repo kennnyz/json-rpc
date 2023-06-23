@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: ./docker/rpc/Dockerfile
     environment:
-      RCP_ADDRESS: "0.0.0.0:12345"
+      RCP_ADDRESS: ":12345"
       DSN: "host=host.docker.internal port=5432 user=postgres password=password dbname=lamoda sslmode=disable timezone=UTC connect_timeout=5"
     ports:
       - 12345:12345
@@ -29,8 +29,8 @@ services:
       context: .
       dockerfile: docker/app/Dockerfile
     environment:
-      HTTP_ADDRESS: "localhost:8080"
-      RCP_ADDRESS: "0.0.0.0:12345"
+      HTTP_ADDRESS: ":8080"
+      RCP_ADDRESS: "server:12345"
     ports:
         - 8080:8080
     depends_on:

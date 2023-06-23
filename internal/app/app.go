@@ -14,7 +14,7 @@ import (
 
 func Run(configPath string) {
 	tcpAddr := os.Getenv("RCP_ADDRESS")
-	time.Sleep(5 * time.Second)
+	time.Sleep(30 * time.Second)
 	RpcClient, err := jsonrpc.Dial("tcp", tcpAddr)
 	if err != nil {
 		log.Fatal(err)

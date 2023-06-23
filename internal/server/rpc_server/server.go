@@ -1,6 +1,7 @@
 package grpc_server
 
 import (
+	"fmt"
 	"github.com/kennnyz/lamoda/internal/models"
 	"github.com/kennnyz/lamoda/internal/service"
 	"log"
@@ -128,6 +129,8 @@ func (s *Server) Run() error {
 	listener := new(API)
 	listener.services = s.services
 	rpc.Register(listener)
+
+	fmt.Println("address", s.ListenAddr)
 	log.Println("RPC server started")
 	for {
 		conn, err := inbound.Accept()

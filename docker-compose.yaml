@@ -1,19 +1,5 @@
-version: '3'
+version: '3.8'
 services:
-  server:
-    build:
-      context: .
-      dockerfile: ./docker/rpc/Dockerfile
-    ports:
-      - ":8080"
-    depends_on:
-      - db
-  app:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
-    depends_on:
-      - db
   db:
     image: postgres
     environment:
@@ -22,3 +8,36 @@ services:
       POSTGRES_DB: lamoda
     ports:
       - 5432:5432
+    networks:
+      - my-network
+  server:
+    build:
+      context: .
+      dockerfile: ./docker/rpc/Dockerfile
+    environment:
+      RCP_ADDRESS: "0.0.0.0:12345"
+      DSN: "host=host.docker.internal port=5432 user=postgres password=password dbname=lamoda sslmode=disable timezone=UTC connect_timeout=5"
+    ports:
+      - 12345:12345
+    depends_on:
+      - db
+    networks:
+      - my-network
+    command: sh -c "sleep 5 && ./json-rpc-server"
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    environment:
+      HTTP_ADDRESS: "localhost:8080"
+      RCP_ADDRESS: "0.0.0.0:12345"
+    ports:
+        - 8080:8080
+    depends_on:
+      - server
+    networks:
+      - my-network
+
+
+networks:
+    my-network:

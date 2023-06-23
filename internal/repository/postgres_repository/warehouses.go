@@ -24,9 +24,9 @@ func NewWareHouseRepo(db *sql.DB) *WarehouseRepo {
 	}
 }
 
-func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) (err error) {
+func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) error {
 	log.Println("Reserving products:", productCode)
-	err = w.checkWarehouse(wareHouseID)
+	err := w.checkWarehouse(wareHouseID)
 	if err != nil {
 		return err
 	}
@@ -41,24 +41,16 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) (err e
 		return err
 	}
 
-	defer func() {
-		if err == nil {
-			tx.Commit()
-			return // все хорошо
-		}
-		tx.Rollback()
-	}()
-
 	stmtSelect, err := tx.Prepare("SELECT * FROM product_warehouse WHERE warehouse_id = $1 AND product_code = $2 FOR UPDATE;")
 	if err != nil {
-
+		tx.Rollback()
 		return err
 	}
 	defer stmtSelect.Close()
 
 	stmtUpdate, err := tx.Prepare("UPDATE product_warehouse SET reserved = reserved + 1 WHERE warehouse_id = $1 AND product_code = $2;")
 	if err != nil {
-
+		tx.Rollback()
 		return err
 	}
 	defer stmtUpdate.Close()
@@ -73,7 +65,7 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) (err e
 		return models.ErrNoProducts
 	}
 
-	defer rows.Close()
+	rows.Close()
 
 	_, err = stmtUpdate.Exec(wareHouseID, productCode)
 	if err != nil {
@@ -87,14 +79,24 @@ func (w *WarehouseRepo) ReserveProducts(wareHouseID int, productCode int) (err e
 		return err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("success")
 
 	return nil
 }
 
-func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) (err error) {
+func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) error {
 	// Начало транзакции
-	err = w.checkWarehouse(warehouseID)
+	err := w.checkWarehouse(warehouseID)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.db.Exec("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
 	if err != nil {
 		return err
 	}
@@ -106,21 +108,14 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) (e
 
 	stmtSelect, err := tx.Prepare("SELECT * FROM product_warehouse WHERE warehouse_id = $1 AND product_code = $2 FOR UPDATE;")
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
-
-	defer func() {
-		if err == nil {
-			tx.Commit()
-			return // все хорошо
-		}
-		tx.Rollback()
-	}()
-
 	defer stmtSelect.Close()
 
 	stmtUpdate, err := tx.Prepare("UPDATE product_warehouse SET reserved = reserved - 1, count = count -1 WHERE warehouse_id = $1 AND product_code = $2;")
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 	defer stmtUpdate.Close()
@@ -134,7 +129,7 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) (e
 		return models.ErrNoProductsInReserve
 	}
 
-	defer rows.Close()
+	rows.Close()
 
 	_, err = stmtUpdate.Exec(warehouseID, productCode)
 	if err != nil {
@@ -143,6 +138,11 @@ func (w *WarehouseRepo) ReleaseReservedProducts(warehouseID, productCode int) (e
 				return models.ErrNoProducts
 			}
 		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
 		return err
 	}
 

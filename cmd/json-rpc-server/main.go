@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/kennnyz/lamoda/internal/repository/postgres_repository"
-	grpc_server "github.com/kennnyz/lamoda/internal/server/rpc_server"
+	jsonRPC_server "github.com/kennnyz/lamoda/internal/server/rpc_server"
 	"github.com/kennnyz/lamoda/internal/service"
 	"github.com/kennnyz/lamoda/pkg/database/postgres"
 	"log"
@@ -24,7 +24,7 @@ func main() {
 	log.Println(services.WareHouse)
 
 	rcpAddr := os.Getenv("RCP_ADDRESS")
-	server := grpc_server.NewRPCServer(services, rcpAddr)
+	server := jsonRPC_server.NewRPCServer(services, rcpAddr)
 
 	err = server.Run()
 	if err != nil {

@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/jackc/pgx/v5 v5.4.1
-	github.com/ybbus/jsonrpc/v3 v3.1.4
 )
 
 require (

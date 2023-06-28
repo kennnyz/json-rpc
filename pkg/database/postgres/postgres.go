@@ -13,9 +13,6 @@ import (
 func NewClient(dsn string) (*sql.DB, error) {
 	counts := 0
 
-	// dsn - DataSourceName
-	//dsn := "host=localhost port=5432 user=postgres password=password dbname=concurrency sslmode=disable timezone=UTC connect_timeout=5"
-
 	for {
 		connection, err := openDB(dsn)
 		if err != nil {

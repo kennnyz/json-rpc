@@ -1,4 +1,4 @@
-# Json-RPC server
+# Json-RPC Application
 
 ### Описание
 
